@@ -9,12 +9,17 @@ using System.Threading.Tasks;
 
 public class ReadInput : MonoBehaviour
 {
-    private string input;
+    public string replyJSON;
+    public string reply;
+    public string intent;
+    private string s_id;
 
     // Start is called before the first frame update
     void Start()
     {
-        Task.Run(() => RunAsync());
+        // generate session id here
+        Guid myuuid = Guid.NewGuid();
+        s_id = myuuid.ToString();
     }
 
     // Update is called once per frame
@@ -23,32 +28,65 @@ public class ReadInput : MonoBehaviour
         
     }
 
-    public void ReadStringInput(string s)
+    public void ReadStringInput(string s) // called when the text box recives the enter key
     {
-        input = s;
-        Debug.Log(input);
-        
+        replyJSON = RunAsync(s, s_id);
+        reply = parseReply(replyJSON);
+        intent = parseIntent(replyJSON);
+        Debug.Log("reply: " + reply);
+        Debug.Log("intent: " + intent);
     }
 
-    static async Task RunAsync()
+    private static string RunAsync(string inp, string uuid)
     {
-        using (var client = new HttpClient())
+        var para = new Dictionary<string, string>();
+
+        /*
+         * if the script is running on a server, put the address here. 
+         * otherwise, the script is running on localhost and uses the address i put here
+         */
+        var url = "http://127.0.0.1:5000/";
+        var result = "There was an error.";
+        para.Add("input", inp);
+        para.Add("session_id", uuid);
+        para.Add("lang", "en-US"); // you can use this to change the language later
+
+        using (HttpClient client = new HttpClient())
         {
-            client.BaseAddress = new Uri("http://127.0.0.1:5000/");
-            var content = new FormUrlEncodedContent(new[]
-            {
-                new KeyValuePair<string, string>("input", "Hello")
-            });
-            var result = await client.PostAsync("", content);
-            string resultContent = await result.Content.ReadAsStringAsync();
-            Debug.Log(resultContent);
-        }
-    }
-}
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-class Product
-{
-    public string Name { get; set; }
-    public double Price { get; set; }
-    public string Category { get; set; }
+            HttpResponseMessage response = client.PostAsync(url, new FormUrlEncodedContent(para)).Result;
+            var token = response.Content.ReadAsStringAsync().Result;
+            result = token;
+            Debug.Log("ssid: " + uuid);
+        }
+
+        return result;
+    }
+
+    private static string parseReply(string json)
+    {
+        // Debug.Log(json);
+        string[] jsonArr = json.Split('\n'); // index 1 is intent, 2 is reply
+        // now our response looks like this: "response": "Welcome to my agent!"
+        string[] res = jsonArr[2].Split(':');
+        string finalString = res[1].Replace("\"", "");
+        return finalString;
+    }
+
+    private static string parseIntent(string json)
+    {
+        string[] jsonArr = json.Split('\n'); // index 1 is intent, 2 is reply
+        // now our intent looks like this: "intent": "Default Welcome Intent",
+        string[] res = jsonArr[1].Split(':');
+        string finalString = res[1].Replace("\"", "");
+        string finalString2 = finalString.Replace(",", ""); // remove trailing comma
+        return finalString2;
+    }
+    /* response payload looks like this: 
+     * token: {
+        "intent": "Default Welcome Intent", 
+        "response": "Welcome to my agent!"
+        }
+     */
 }

@@ -52,7 +52,7 @@ else
     exit $?
 fi
 
-python DfV2API.py --project-id kinetest-337921 --session-id 83b1d725-3e6b-a062-2cc2-5de9f9788f6f
+python DfV2API.py --project-id [PROJECT ID GOES HERE]
 if [$? -eq 0 ]; then
     echo "success"
 else
@@ -125,7 +125,7 @@ if exist requirements.txt (
 :: check if python script exists
 if exist DfV2API.py (
     ECHO python script found. Running script...
-    python DfV2API.py --project-id kinetest-337921 --session-id 83b1d725-3e6b-a062-2cc2-5de9f9788f6f
+    python DfV2API.py --project-id [PROJECT ID GOES HERE] 
 ) else (
     ECHO python script not found. Please install it in the correct directory
     GOTO :EOF
